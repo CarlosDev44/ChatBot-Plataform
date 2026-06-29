@@ -1,4 +1,4 @@
-from app.models.chat import ChatRequest
+from app.schemas.chat import ChatRequest
 from fastapi import APIRouter
 from app.services.chat_service import send_message
 
