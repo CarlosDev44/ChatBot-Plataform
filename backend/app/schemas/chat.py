@@ -1,5 +1,10 @@
 from pydantic import BaseModel
 
-class ChatRequest(BaseModel):
-    conversation_id: int | None = None
-    message: str
+
+class ConversationResponse(BaseModel):
+
+    id: int
+    title: str
+
+    class Config:
+        from_attributes = True
