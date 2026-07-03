@@ -1,6 +1,7 @@
 from app.models.conversation import Conversation
 from app.models.messages import Message
 from app.services.chat_service import send_message
+from app.models.conversation import Conversation
 
 
 def create_conversation(db, title):
@@ -92,3 +93,9 @@ def process_chat(db, message, conversation_id):
         "response": response,
         "conversation_id": conversation.id
     }
+
+def get_conversations(db):
+
+    conversations = db.query(Conversation).all()
+
+    return conversations
