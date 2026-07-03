@@ -1,8 +1,10 @@
-from app.services.groq_client import client
+from backend.app.clients.groq_client import get_client
 from app.config.config import MODEL
 
 
 def send_message(history):
+
+    client = get_client()
 
     response = client.chat.completions.create(
         model=MODEL,

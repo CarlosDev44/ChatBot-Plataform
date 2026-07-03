@@ -1,7 +1,6 @@
 from app.models.conversation import Conversation
 from app.models.messages import Message
 from app.services.chat_service import send_message
-from app.models.conversation import Conversation
 
 
 def create_conversation(db, title):
@@ -58,11 +57,7 @@ def get_ai_response(history):
 def process_chat(db, message, conversation_id):
 
     if conversation_id is None:
-
-        conversation = create_conversation(
-            db,
-            message
-        )
+        conversation = None
 
     else:
 
@@ -71,16 +66,29 @@ def process_chat(db, message, conversation_id):
             conversation_id
         )
 
+        if conversation is None:
+            return None
+
+    history = build_history(conversation) if conversation else []
+    history.append({
+        "role": "user",
+        "content": message
+    })
+
+    response = get_ai_response(history)
+
+    if conversation is None:
+        conversation = create_conversation(
+            db,
+            message
+        )
+
     save_message(
         db,
         conversation.id,
         message,
         "user"
     )
-
-    history = build_history(conversation)
-
-    response = get_ai_response(history)
 
     save_message(
         db,
@@ -100,11 +108,7 @@ def get_conversations(db):
 
     return conversations
 
-def delete_conversations(db, conversation_id):
-
-    conversation = get_conversation(db, conversation_id)
+def delete_conversation(db, conversation):
 
     db.delete(conversation)
     db.commit()
-
-    return conversation
