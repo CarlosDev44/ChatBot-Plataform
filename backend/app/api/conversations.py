@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.dependencies import get_db
 from app.schemas.chat import ConversationResponse
-from app.services.conversation_service import get_conversation, get_conversations
+from app.services.conversation_service import delete_conversations, get_conversation, get_conversations
 
 
 router = APIRouter()
@@ -29,3 +29,12 @@ def conversation(
 ):
 
     return get_conversation(db, conversation_id)
+
+@router.delete("/conversations/{conversation_id}")
+def delete_conversation(
+    conversation_id: int,
+    db: Session = Depends(get_db)
+):
+    delete_conversations(db, conversation_id)
+
+    return {"message": "Conversation deleted successfully."}

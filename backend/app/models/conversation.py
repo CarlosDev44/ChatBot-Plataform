@@ -7,4 +7,4 @@ class Conversation(Base):
 
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
-    messages = relationship("Message", back_populates="conversation")
+    messages = relationship("Message", back_populates="conversation", cascade = "all, delete-orphan")

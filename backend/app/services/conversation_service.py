@@ -99,3 +99,12 @@ def get_conversations(db):
     conversations = db.query(Conversation).all()
 
     return conversations
+
+def delete_conversations(db, conversation_id):
+
+    conversation = get_conversation(db, conversation_id)
+
+    db.delete(conversation)
+    db.commit()
+
+    return conversation
