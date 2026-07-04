@@ -2,6 +2,7 @@ from sqlalchemy import Column, ForeignKey, Integer, String
 from app.db.database import Base
 from sqlalchemy.orm import relationship
 
+# Esta clase representa la tabla "messages" en la base de datos
 class Message(Base):
     __tablename__ = "messages"
 

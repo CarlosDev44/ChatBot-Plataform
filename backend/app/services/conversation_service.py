@@ -2,7 +2,9 @@ from app.models.conversation import Conversation
 from app.models.messages import Message
 from app.services.chat_service import send_message
 
+# Módulo encargado de gestionar la lógica de conversaciones y mensajes del chat.
 
+# Crea una nueva conversación en la base de datos con el título proporcionado.
 def create_conversation(db, title):
 
     conversation = Conversation(title=title)
@@ -13,14 +15,14 @@ def create_conversation(db, title):
 
     return conversation
 
-
+# Obtiene una conversación específica a partir de su identificador.
 def get_conversation(db, conversation_id):
 
     return db.query(Conversation).filter(
         Conversation.id == conversation_id
     ).first()
 
-
+# Guarda un mensaje asociado a una conversación en la base de datos.
 def save_message(db, conversation_id, content, role):
 
     message = Message(
@@ -35,7 +37,7 @@ def save_message(db, conversation_id, content, role):
 
     return message
 
-
+# Construye el historial de mensajes de una conversación en el formato esperado por el modelo de IA.
 def build_history(conversation):
 
     history = []
@@ -48,12 +50,12 @@ def build_history(conversation):
 
     return history
 
-
+# Solicita una respuesta al servicio de IA utilizando el historial de mensajes.
 def get_ai_response(history):
 
     return send_message(history)
 
-
+# Procesa un mensaje de chat, lo guarda en la conversación correspondiente y devuelve la respuesta generada.
 def process_chat(db, message, conversation_id):
 
     if conversation_id is None:
@@ -102,12 +104,14 @@ def process_chat(db, message, conversation_id):
         "conversation_id": conversation.id
     }
 
+# Obtiene todas las conversaciones almacenadas en la base de datos.
 def get_conversations(db):
 
     conversations = db.query(Conversation).all()
 
     return conversations
 
+# Elimina una conversación de la base de datos.
 def delete_conversation(db, conversation):
 
     db.delete(conversation)
