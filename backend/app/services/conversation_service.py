@@ -1,6 +1,8 @@
 from app.models.conversation import Conversation
 from app.models.messages import Message
-from app.services.chat_service import send_message
+from app.services.chat_service import send_message, stream_message
+from app.rag.embeddings import generate_query_embedding
+from app.rag.retriever import retrieve_chunks
 
 # Módulo encargado de gestionar la lógica de conversaciones y mensajes del chat.
 
@@ -51,13 +53,17 @@ def build_history(conversation):
     return history
 
 # Solicita una respuesta al servicio de IA utilizando el historial de mensajes.
-def get_ai_response(history):
+def get_ai_response(history, context):
 
-    return send_message(history)
+    return send_message(
+        history,
+        context
+    )
 
 # Procesa un mensaje de chat, lo guarda en la conversación correspondiente y devuelve la respuesta generada.
 def process_chat(db, message, conversation_id):
 
+    # Obtener la conversación si existe
     if conversation_id is None:
         conversation = None
 
@@ -71,20 +77,58 @@ def process_chat(db, message, conversation_id):
         if conversation is None:
             return None
 
+    # Construir el historial
     history = build_history(conversation) if conversation else []
+
+    # Generar el embedding de la pregunta
+    query_embedding = generate_query_embedding(message)
+
+    # Recuperar los chunks más relevantes
+    chunks = retrieve_chunks(
+        db,
+        query_embedding
+    )
+
+    # ===== DEPURACIÓN =====
+    print("\n===== CHUNKS RECUPERADOS =====\n")
+
+    for i, chunk in enumerate(chunks, start=1):
+        print(f"===== Chunk {i} =====")
+        print(chunk.content)
+        print("-" * 80)
+
+    # Construir el contexto
+    context = "\n\n".join(
+        chunk.content
+        for chunk in chunks
+    )
+
+    # ===== DEPURACIÓN =====
+    print("\n===== CONTEXTO ENVIADO AL LLM =====\n")
+    print(context)
+    print("\n===============================\n")
+
+    # Agregar el mensaje del usuario al historial
     history.append({
         "role": "user",
         "content": message
     })
 
-    response = get_ai_response(history)
+    # Obtener la respuesta del modelo
+    response = get_ai_response(
+        history,
+        context
+    )
 
+    # Si la conversación no existía, crearla
     if conversation is None:
+
         conversation = create_conversation(
             db,
             message
         )
 
+    # Guardar el mensaje del usuario
     save_message(
         db,
         conversation.id,
@@ -92,6 +136,7 @@ def process_chat(db, message, conversation_id):
         "user"
     )
 
+    # Guardar la respuesta del asistente
     save_message(
         db,
         conversation.id,
@@ -104,6 +149,80 @@ def process_chat(db, message, conversation_id):
         "conversation_id": conversation.id
     }
 
+
+def process_chat_stream(db, message, conversation_id):
+
+    if conversation_id is None:
+        conversation = create_conversation(
+            db,
+            message
+        )
+
+    else:
+
+        conversation = get_conversation(
+            db,
+            conversation_id
+        )
+
+        if conversation is None:
+            return None
+
+    history = build_history(conversation)
+
+    query_embedding = generate_query_embedding(message)
+
+    chunks = retrieve_chunks(
+        db,
+        query_embedding
+    )
+
+    print("\n===== CHUNKS RECUPERADOS =====\n")
+
+    for i, chunk in enumerate(chunks, start=1):
+        print(f"===== Chunk {i} =====")
+        print(chunk.content)
+        print("-" * 80)
+
+    context = "\n\n".join(
+        chunk.content
+        for chunk in chunks
+    )
+
+    print("\n===== CONTEXTO ENVIADO AL LLM =====\n")
+    print(context)
+    print("\n===============================\n")
+
+    history.append({
+        "role": "user",
+        "content": message
+    })
+
+    save_message(
+        db,
+        conversation.id,
+        message,
+        "user"
+    )
+
+    def generator():
+        response_parts = []
+
+        for token in stream_message(history, context):
+            response_parts.append(token)
+            yield token
+
+        save_message(
+            db,
+            conversation.id,
+            "".join(response_parts),
+            "assistant"
+        )
+
+    return {
+        "conversation_id": conversation.id,
+        "stream": generator()
+    }
 # Obtiene todas las conversaciones almacenadas en la base de datos.
 def get_conversations(db):
 

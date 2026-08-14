@@ -1,10 +1,13 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.db.dependencies import get_db
 from app.schemas.chat import ChatRequest
 
-from app.services.conversation_service import process_chat
+from app.services.conversation_service import process_chat, process_chat_stream
 
 #Router encargado de gestionar las peticiones relacionadas con el chat.
 
@@ -39,3 +42,45 @@ def chat(
         )
     #Devuelve la respuesta generada por el modelo de lenguaje si todo ha ido bien.
     return result
+
+
+@router.post("/chat/stream")
+def chat_stream(
+    request: ChatRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        result = process_chat_stream(
+            db,
+            request.message,
+            request.conversation_id
+        )
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error)
+        ) from error
+
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found"
+        )
+
+    def event_stream():
+        yield f"data: {json.dumps({'type': 'meta', 'conversation_id': result['conversation_id']})}\n\n"
+
+        for token in result["stream"]:
+            yield f"data: {json.dumps({'type': 'delta', 'content': token})}\n\n"
+
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )

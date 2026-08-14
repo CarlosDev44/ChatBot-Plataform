@@ -6,6 +6,6 @@ load_dotenv()
 
 # variables del proyecto
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./chatbot.db")
+DATABASE_URL = os.getenv("DATABASE_URL")
 REDIS_URL = os.getenv("REDIS_URL")
 MODEL = os.getenv("MODEL", "llama-3.1-8b-instant")

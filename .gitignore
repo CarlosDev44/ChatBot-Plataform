@@ -18,5 +18,10 @@ venv/
 # Logs
 *.log
 
+# Node / Next.js
+node_modules/
+.next/
+out/
+
 # OS files
 .DS_Store

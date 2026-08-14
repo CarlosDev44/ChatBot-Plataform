@@ -1,23 +1,58 @@
-from backend.app.clients.groq_client import get_client
+from app.clients.groq_client import get_client
 from app.config.config import MODEL
 
-# Esta función se utiliza para enviar un mensaje al modelo de lenguaje y obtener una respuesta.
-def send_message(history):
 
-    # Client es una instancia del cliente de Groq que se utiliza para interactuar con el modelo de lenguaje.
+def send_message(history, context):
+
     client = get_client()
 
-    # Response es la respuesta que se obtiene del modelo de lenguaje después de enviar el mensaje.
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
             {
                 "role": "system",
-                "content": "You are a helpful assistant."
+                "content": f"""
+You are a helpful assistant.
+
+Answer the user's questions using ONLY the information provided in the context.
+
+If the answer is not contained in the context, say that you don't know.
+
+Context:
+{context}
+"""
             }
-        ] + history # Se utiliza para enviar el historial de mensajes al modelo de lenguaje para que pueda generar una respuesta coherente basada en el contexto de la conversación.
+        ] + history
     )
 
-
-    # Devuelve el contenido del primer mensaje de la respuesta del modelo de lenguaje.
     return response.choices[0].message.content
+
+
+def stream_message(history, context):
+
+    client = get_client()
+
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": f"""
+You are a helpful assistant.
+
+Answer the user's questions using ONLY the information provided in the context.
+
+If the answer is not contained in the context, say that you don't know.
+
+Context:
+{context}
+"""
+            }
+        ] + history,
+        stream=True
+    )
+
+    for chunk in response:
+        content = chunk.choices[0].delta.content
+        if content:
+            yield content
