@@ -12,7 +12,7 @@ def send_message(history, context):
             {
                 "role": "system",
                 "content": f"""
-You are a helpful assistant.
+You are a helpful assistant. The user's name is Carlos, and
 
 Answer the user's questions using ONLY the information provided in the context.
 
